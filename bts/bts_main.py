@@ -19,6 +19,8 @@ import argparse
 import datetime
 import sys
 import os
+from collections import deque
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -489,6 +491,8 @@ def main_worker(gpu, ngpus_per_node, args):
             args.rank = int(os.environ["RANK"])
         if args.multiprocessing_distributed:
             args.rank = args.rank * ngpus_per_node + gpu
+        print ("=== INIT DIST PROC GROUP")
+        print (f"backend={args.dist_backend}, init_method={args.dist_url}, world_size={args.world_size}, rank={args.rank}")
         dist.init_process_group(
             backend=args.dist_backend,
             init_method=args.dist_url,
@@ -510,6 +514,7 @@ def main_worker(gpu, ngpus_per_node, args):
     print("Total number of learning parameters: {}".format(num_params_update))
 
     if args.distributed:
+        print("=== USING ASYNCHRONOUS MODEL")
         if args.gpu is not None:
             torch.cuda.set_device(args.gpu)
             model.cuda(args.gpu)
@@ -521,6 +526,7 @@ def main_worker(gpu, ngpus_per_node, args):
             model = torch.nn.parallel.DistributedDataParallel(
                 model, find_unused_parameters=True)
     else:
+        print ("=== USING SYNCHRONOUS MODEL")
         model = torch.nn.DataParallel(model)
         model = model.to(device)
 
@@ -619,7 +625,7 @@ def main_worker(gpu, ngpus_per_node, args):
         if args.distributed:
             dataloader.train_sampler.set_epoch(epoch)
 
-        for step, sample_batched in enumerate(dataloader.data):
+        for step, sample_batched in enumerate(tqdm(dataloader.data)):
             optimizer.zero_grad()
             before_op_time = time.time()
 
@@ -636,6 +642,16 @@ def main_worker(gpu, ngpus_per_node, args):
 
             loss = silog_criterion.forward(depth_est, depth_gt,
                                            mask.to(torch.bool))
+
+            if not args.multiprocessing_distributed or (
+                    args.multiprocessing_distributed and
+                    args.rank % ngpus_per_node == 0):
+                if np.isnan(loss.cpu().item()):
+                    # print('NaN in loss occurred. Aborting training.')
+                    # return -1
+                    print('NaN in loss occurred. skipping iteration')
+                    continue
+
             loss.backward()
             for param_group in optimizer.param_groups:
                 current_lr = (args.learning_rate - end_learning_rate) * (
@@ -651,9 +667,7 @@ def main_worker(gpu, ngpus_per_node, args):
                     '[epoch][s/s_per_e/gs]: [{}][{}/{}/{}], lr: {:.12f}, loss: {:.12f}'
                     .format(epoch, step, steps_per_epoch, global_step,
                             current_lr, loss))
-                if np.isnan(loss.cpu().item()):
-                    print('NaN in loss occurred. Aborting training.')
-                    return -1
+
 
             duration += time.time() - before_op_time
             if global_step and global_step % args.log_freq == 0 and not model_just_loaded:
@@ -842,6 +856,8 @@ if args.do_online_eval:
         .format(args.eval_freq))
 if args.multiprocessing_distributed:
     args.world_size = ngpus_per_node * args.world_size
+    print ("=== SPAWNING WORKERS: ",ngpus_per_node)
     mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, args))
 else:
+    print("=== RUNNING ONE SYNCHRONOUS JOB: ",ngpus_per_node)
     main_worker(args.gpu, ngpus_per_node, args)

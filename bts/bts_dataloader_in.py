@@ -13,6 +13,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>
+import time
+
 import numpy as np
 import torch
 from skimage.transform import rescale
@@ -22,6 +24,8 @@ from torchvision import transforms
 from PIL import Image
 import os
 import random
+
+from tqdm import trange, tqdm
 
 from bts.distributed_sampler_no_evenly_divisible import DistributedSamplerNoEvenlyDivisible
 
@@ -247,19 +251,42 @@ class ToTensorIN(object):
 
 if __name__ == '__main__':
 
+    # class args:
+    #     smol = True
+    #     dataset = "IN"
+    #     input_width = 128
+    #     input_height = 128
+    #     # data_path = "/Users/florian/intnet-bedrooms-png-sample/"
+    #     # gt_path = "/Users/florian/intnet-bedrooms-png-sample/"
+    #     data_path = "/data/fgolemo/intnet-bedrooms-png/"
+    #     gt_path = "/data/fgolemo/intnet-bedrooms-png/"
+    #     filenames_file = "../train_test_inputs/interiornet_train_files_with_gt.txt"
+    #
+    # ds = DataLoadPreprocessIN(args, "train")
+    # print(len(ds))
+    # start = time.time()
+    # for i in trange(1000):
+    #     a = ds[i]
+    # diff = time.time() - start
+
     class args:
-        smol = True
-        dataset = "IN"
+        dataset="IN"
         input_width = 128
         input_height = 128
-        data_path = "/Users/florian/intnet-bedrooms-png-sample/"
-        gt_path = "/Users/florian/intnet-bedrooms-png-sample/"
+        smol = True
+        data_path = "/data/fgolemo/intnet-bedrooms-png/"
+        gt_path = "/data/fgolemo/intnet-bedrooms-png/"
         filenames_file = "../train_test_inputs/interiornet_train_files_with_gt.txt"
+        multiprocessing_distributed = False
+        distributed = False
+        batch_size = 4
+        num_threads = 1
 
-    ds = DataLoadPreprocessIN(args, "train")
-    print(len(ds))
-    a = ds[0]
-
+    ds = BtsDataLoaderIN(args, "train")
+    start = time.time()
+    for sample_batched in tqdm(ds.data):
+        pass
+    diff = time.time() - start
 
 # (128, 128, 3) float32 0.0 0.99557334 0.4302175
 # (128, 128, 1) float32 0.0 26.169596 11.222618
