@@ -586,7 +586,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
     if args.dataset == "inet" :
         dataloader = BtsDataLoaderIN(args, 'train')
-    elif args.dataset == "rooms":
+    elif args.dataset == "rooms1":
         dataloader = BtsDataLoaderRooms(args, 'train')
     else:
         dataloader = BtsDataLoader(args, 'train')
