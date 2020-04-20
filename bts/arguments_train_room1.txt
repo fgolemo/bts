@@ -1,0 +1,22 @@
+--mode train
+--model_name bts_rooms1_pytorch_train
+--encoder densenet121_bts
+--dataset rooms1
+--data_path /data/fgolemo/rooms/ds1-roomy-chairs-prepped/train
+--gt_path /data/fgolemo/rooms/ds1-roomy-chairs-prepped/train
+--filenames_file ../train_test_inputs/roomychairs1_train_files_with_gt.txt
+--filenames_file_eval ../train_test_inputs/roomychairs1_alt_files_with_gt.txt
+--batch_size 4
+--num_epochs 50
+--learning_rate 1e-4
+--weight_decay 1e-2
+--num_threads 16
+--input_height 128
+--input_width 128
+--max_depth 50
+--do_random_rotate
+--degree 2.5
+--log_directory ./models/
+--dist_url tcp://127.0.0.1:2345
+--gpu 0
+

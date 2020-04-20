@@ -40,6 +40,7 @@ from tqdm import tqdm
 
 from bts.bts_dataloader_128 import BtsDataLoader
 from bts.bts_dataloader_in import BtsDataLoaderIN
+from bts.bts_dataloader_rooms import BtsDataLoaderRooms
 from bts.bts_model import bn_init_as_tf, BtsModel, weights_init_xavier, silog_loss
 
 
@@ -583,10 +584,12 @@ def main_worker(gpu, ngpus_per_node, args):
 
     cudnn.benchmark = True
 
-    if args.dataset != "inet":
-        dataloader = BtsDataLoader(args, 'train')
-    else:
+    if args.dataset == "inet" :
         dataloader = BtsDataLoaderIN(args, 'train')
+    elif args.dataset == "rooms":
+        dataloader = BtsDataLoaderRooms(args, 'train')
+    else:
+        dataloader = BtsDataLoader(args, 'train')
 
     # Logging
     if not args.multiprocessing_distributed or (
