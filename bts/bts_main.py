@@ -160,10 +160,7 @@ parser.add_argument(
     '--use_right',
     help='if set, will randomly use right images when train on KITTI',
     action='store_true')
-parser.add_argument(
-    '--smol',
-    help='use 128x128 variant',
-    action='store_true')
+parser.add_argument('--smol', help='use 128x128 variant', action='store_true')
 # Multi-gpu training
 parser.add_argument(
     '--num_threads',
@@ -492,8 +489,10 @@ def main_worker(gpu, ngpus_per_node, args):
             args.rank = int(os.environ["RANK"])
         if args.multiprocessing_distributed:
             args.rank = args.rank * ngpus_per_node + gpu
-        print ("=== INIT DIST PROC GROUP")
-        print (f"backend={args.dist_backend}, init_method={args.dist_url}, world_size={args.world_size}, rank={args.rank}")
+        print("=== INIT DIST PROC GROUP")
+        print(
+            f"backend={args.dist_backend}, init_method={args.dist_url}, world_size={args.world_size}, rank={args.rank}"
+        )
         dist.init_process_group(
             backend=args.dist_backend,
             init_method=args.dist_url,
@@ -527,7 +526,7 @@ def main_worker(gpu, ngpus_per_node, args):
             model = torch.nn.parallel.DistributedDataParallel(
                 model, find_unused_parameters=True)
     else:
-        print ("=== USING SYNCHRONOUS MODEL")
+        print("=== USING SYNCHRONOUS MODEL")
         model = torch.nn.DataParallel(model)
         model = model.to(device)
 
@@ -584,7 +583,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
     cudnn.benchmark = True
 
-    if args.dataset == "inet" :
+    if args.dataset == "inet":
         dataloader = BtsDataLoaderIN(args, 'train')
     elif args.dataset == "rooms1":
         dataloader = BtsDataLoaderRooms(args, 'train')
@@ -632,14 +631,16 @@ def main_worker(gpu, ngpus_per_node, args):
             optimizer.zero_grad()
             before_op_time = time.time()
 
-            image = Variable(sample_batched['image']).to(device)
-            focal = Variable(sample_batched['focal']).to(device)
-            depth_gt = Variable(sample_batched['depth']).to(device)
+            image = sample_batched['image'].to(device)
+            focal = sample_batched['focal'].to(device)
+            depth_gt = sample_batched['depth'].to(device)
 
             lpg8x8, lpg4x4, lpg2x2, reduc1x1, depth_est = model(image, focal)
 
             if args.dataset == 'nyu':
                 mask = depth_gt > 0.1
+            elif args.dataset == "rooms1":
+                mask = depth_gt > 0.01
             else:
                 mask = depth_gt > 1.0
 
@@ -670,7 +671,6 @@ def main_worker(gpu, ngpus_per_node, args):
                     '[epoch][s/s_per_e/gs]: [{}][{}/{}/{}], lr: {:.12f}, loss: {:.12f}'
                     .format(epoch, step, steps_per_epoch, global_step,
                             current_lr, loss))
-
 
             duration += time.time() - before_op_time
             if global_step and global_step % args.log_freq == 0 and not model_just_loaded:
@@ -859,8 +859,8 @@ if args.do_online_eval:
         .format(args.eval_freq))
 if args.multiprocessing_distributed:
     args.world_size = ngpus_per_node * args.world_size
-    print ("=== SPAWNING WORKERS: ",ngpus_per_node)
+    print("=== SPAWNING WORKERS: ", ngpus_per_node)
     mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, args))
 else:
-    print("=== RUNNING ONE SYNCHRONOUS JOB: ",ngpus_per_node)
+    print("=== RUNNING ONE SYNCHRONOUS JOB: ", ngpus_per_node)
     main_worker(args.gpu, ngpus_per_node, args)
