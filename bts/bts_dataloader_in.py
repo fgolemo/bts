@@ -277,7 +277,8 @@ if __name__ == '__main__':
         data_path = "/data/fgolemo/intnet-bedrooms-png/"
         gt_path = "/data/fgolemo/intnet-bedrooms-png/"
         filenames_file = "../train_test_inputs/interiornet_train_files_with_gt.txt"
-        multiprocessing_distributed = False
+        # multiprocessing_distributed = False
+        multiprocessing_distributed = None
         distributed = False
         batch_size = 4
         num_threads = 1

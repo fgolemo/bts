@@ -15,8 +15,8 @@ from skimage.transform import resize, rescale
 # Visualization
 import matplotlib.pyplot as plt
 
-# from bts.bts_model import BtsModel
-from bts.models.bts_nyu_v2_pytorch_densenet161.bts_nyu_v2_pytorch_densenet161 import BtsModel
+from bts.bts_model import BtsModel
+# from bts.models.bts_nyu_v2_pytorch_densenet161.bts_nyu_v2_pytorch_densenet161 import BtsModel
 from bts.test_imgs import get_all_imgs, get_img, PATH
 
 
